@@ -1,0 +1,132 @@
+import java.util.Scanner;
+
+class Player {
+
+private static final int literal = 5;
+private static final int maxvSpeed = 40;
+private static final int maxhSpeed = 20;
+
+private static final double gravity = 3.711;
+private static final int securitydistanceflat = 50;
+
+public static void main(String args[]) {
+
+Scanner in = new Scanner(System.in);
+int surfaceN = in.nextInt(); // the number of points used to draw the surface of Mars.
+
+int flatLX = 0;
+int flatRX = 0;
+int flatY = 0;
+int previousX = 0;
+int previousY = 0;
+for (int i = 0; i < surfaceN; i++) {
+int landX = in.nextInt(); // X coordinate of a surface point. (0 to 6999)
+int landY = in.nextInt(); // Y coordinate of a surface point. By linking all the points together in a sequential fashion, you form the surface of Mars.
+if (previousY == landY) {
+flatLX = previousX;
+flatRX = landX;
+flatY = landY;
+} else {
+previousX = landX;
+previousY = landY;
+}
+}
+
+// game loop
+while (true) {
+
+int X = in.nextInt();
+int Y = in.nextInt();
+int hSpeed = in.nextInt(); // the horizontal speed (in m/s), can be negative.
+int vSpeed = in.nextInt(); // the vertical speed (in m/s), can be negative.
+int fuel = in.nextInt(); // the quantity of remaining fuel in liters.
+int rotate = in.nextInt(); // the rotation angle in degrees (-90 to 90).
+int power = in.nextInt(); // the thrust power (0 to 4).
+
+if (MLOverGround(X, flatLX, flatRX)) {
+
+if (MLCloseToLand(Y, flatY)) {
+rotate = 0;
+power = 3;
+} else if (MLRestrictionsSatisfied(hSpeed, vSpeed)) {
+rotate = 0;
+power = 2;
+} else {
+rotate = calculateslowdownofML(hSpeed, vSpeed);
+power = 4;
+}
+
+} else {
+
+if (MLflyinwrongway(X, hSpeed, flatLX, flatRX) || MLhasfastspeednearflatground(hSpeed)) {
+rotate = calculateslowdownofML(hSpeed, vSpeed);
+power = 4;
+} else if (MLhasslowspeednearflatground(hSpeed)) {
+rotate = calculatespeedupofML(X, flatLX, flatRX);
+power = 4;
+} else {
+rotate = 0;
+power = calculatethrustpowerofML(vSpeed);
+}
+
+}
+
+System.out.println(rotate + " " + power);
+}
+
+}
+
+private static boolean MLOverGround (int MLX, int flatLX, int flatRX) {
+return MLX >= flatLX && MLX <= flatRX;
+}
+
+private static boolean MLCloseToLand(int MLY, int flatY) {
+return MLY < flatY + securitydistanceflat;
+}
+
+private static boolean MLRestrictionsSatisfied(int MLhSpeed, int MLvSpeed) {
+return Math.abs(MLhSpeed) <= (maxhSpeed - literal) && Math.abs(MLvSpeed) <= (maxvSpeed - literal);
+}
+
+private static int calculateslowdownofML(int hSpeed, int vSpeed) {
+double speed = Math.sqrt(Math.pow(hSpeed, 2) + Math.pow(vSpeed, 2));
+double rotationAsRadians = Math.asin((double) hSpeed / speed);
+return (int) Math.toDegrees(rotationAsRadians);
+}
+
+private static boolean MLflyinwrongway(int MLX, int MLhSpeed, int flatLX, int flatRX) {
+
+if (MLX < flatLX && MLhSpeed < 0) {
+return true;
+}
+
+if (MLX > flatRX && MLhSpeed > 0) {
+return true;
+}
+
+return false;
+}
+
+private static boolean MLhasfastspeednearflatground(int MLhSpeed) {
+return Math.abs(MLhSpeed) > (maxhSpeed * 4);
+}
+
+private static boolean MLhasslowspeednearflatground(int MLhSpeed) {
+return Math.abs(MLhSpeed) < (maxhSpeed * 2);
+}
+
+private static int calculatespeedupofML(int MLX, int flatLX, int flatRX) {
+if (MLX < flatLX) {
+return - (int) Math.toDegrees(Math.acos(gravity / 4.0));
+}
+
+if (MLX > flatRX) {
+return + (int) Math.toDegrees(Math.acos(gravity / 4.0));
+}
+
+return 0;
+}
+private static int calculatethrustpowerofML(int MLvSpeed) {
+return (MLvSpeed >= 0) ? 3 : 4;
+}
+}
